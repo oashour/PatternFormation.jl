@@ -1,0 +1,13 @@
+name = "PatternFormation"
+uuid = "46de9bd0-cb12-4fa1-9935-b9db13634c90"
+authors = ["Omar Ashour"]
+version = "0.1.0"
+
+[compat]
+julia = "1.7.1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
