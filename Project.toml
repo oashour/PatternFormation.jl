@@ -3,6 +3,18 @@ uuid = "46de9bd0-cb12-4fa1-9935-b9db13634c90"
 authors = ["Omar Ashour"]
 version = "0.1.0"
 
+[deps]
+AlgebraicMultigrid = "2169fc97-5a83-5252-b627-83903c6c433c"
+DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
+LightLattices = "c2d87ffe-efce-4f64-b293-8fcb5ddda528"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+SparseDiffTools = "47a9eef4-7e08-11e9-0b38-333d64bd3804"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
+
 [compat]
 julia = "1.7.1"
 
