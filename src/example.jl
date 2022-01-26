@@ -27,7 +27,7 @@ k = 0.065
 type = "μ"
 D₁ = 2e-5
 D₂ = 1e-5
-N_threads = 16
+N_threads = 8
 BLAS.set_num_threads(N_threads)
 bs = (N -2)÷ N_threads
 ex = ThreadedEx(basesize = bs)
@@ -58,7 +58,7 @@ Base.eltype(::AlgebraicMultigrid.Preconditioner) = Float64
 
 # Solve!
 println("Solving")
-@time sol = solve(prob,KenCarp4(precs=algebraicmultigrid), saveat=range(0, stop=tspan[2], length=101), progress=true, progress_steps=1)
+@time sol = solve(prob,KenCarp4(precs=algebraicmultigrid), saveat=range(0, stop=tspan[2], length=101), progress=true, progress_steps=1);
 
 # Plot!
 #anim = @animate for i in 1:length(sol.t)
