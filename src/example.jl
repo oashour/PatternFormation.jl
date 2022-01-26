@@ -52,13 +52,24 @@ function algebraicmultigrid(W,du,u,p,t,newW,Plprev,Prprev,solverdata)
   end
   Pl,nothing
 end
+using IncompleteLU
+function incompletelu(W,du,u,p,t,newW,Plprev,Prprev,solverdata)
+  if newW === nothing || newW
+    Pl = ilu(convert(AbstractMatrix,W), τ = 50.0)
+  else
+    Pl = Plprev
+  end
+  Pl,nothing
+end
 # Required due to a bug in Krylov.jl: https://github.com/JuliaSmoothOptimizers/Krylov.jl/pull/477
 Base.eltype(::AlgebraicMultigrid.Preconditioner) = Float64
+# Required due to a bug in Krylov.jl: https://github.com/JuliaSmoothOptimizers/Krylov.jl/pull/477
+Base.eltype(::IncompleteLU.ILUFactorization{Tv,Ti}) where {Tv,Ti} = Tv
 
 # Solve!
 println("Solving")
 #@profview solve(prob,KenCarp4(precs=algebraicmultigrid), saveat=range(0, stop=tspan[2], length=101), progress=true, progress_steps=1);
-@profview solve(prob,KenCarp4(linsolve=KLUFactorization(), precs=algebraicmultigrid), saveat=range(0, stop=tspan[2], length=101));
+@time solve(prob,KenCarp4(linsolve=linsolve=KrylovJL_GMRES(), precs=algebraicmultigrid, concrete_jac=true), saveat=range(0, stop=tspan[2], length=101));
 
 # Plot!
 #anim = @animate for i in 1:length(sol.t)
