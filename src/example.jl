@@ -10,8 +10,7 @@ using SparseDiffTools
 using DifferentialEquations, LinearAlgebra
 using AlgebraicMultigrid
 using FLoops
-
-println("Welcome!")
+using IterativeSolvers
 
 # Grid and initial conditions
 const N = 256
@@ -27,13 +26,11 @@ k = 0.065
 type = "μ"
 D₁ = 2e-5
 D₂ = 1e-5
-N_threads = 8
+N_threads = 16
 BLAS.set_num_threads(N_threads)
-bs = (N -2)÷ N_threads
-ex = ThreadedEx(basesize = bs)
 p = [f, k, D₁, D₂, dx, dy, N]
 
-tspan = (0.0, 100.0)
+tspan = (0.0, 10000.0)
 myEquation = GS_Neumann0!
 
 # Jacobian and stuff
@@ -61,11 +58,11 @@ println("Solving")
 @time sol = solve(prob,KenCarp4(precs=algebraicmultigrid), saveat=range(0, stop=tspan[2], length=101), progress=true, progress_steps=1);
 
 # Plot!
-#anim = @animate for i in 1:length(sol.t)
-#  tit = "$type-type; f = $f, k = $k; t = $(sol.t[i])" 
-#  #u = kron(ones(3,3), sol.u[i][:,:,1])
-#  u = sol.u[i][:,:,1]
-#  heatmap(u, c=:berlin, aspect_ratio=dx/dy, axis=([], false), title=tit, colorbar=false)
-#end
-#
-#gif(anim, fps=10)
+anim = @animate for i in 1:length(sol.t)
+  tit = "$type-type; f = $f, k = $k; t = $(sol.t[i])" 
+  #u = kron(ones(3,3), sol.u[i][:,:,1])
+  u = sol.u[i][:,:,1]
+  heatmap(u, c=:berlin, aspect_ratio=dx/dy, axis=([], false), title=tit, colorbar=false)
+end
+
+gif(anim, fps=10)

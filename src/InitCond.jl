@@ -109,7 +109,6 @@ function init_cond(type, N; dx=1/143, M = 5, α=500.0, β=1000.0, c01 = 1, BC=:P
         lattice = RegularLattice((M,M), fbasis, fcell; label = :hexagonal)
 
         u01 = zeros(Float64, N,N)
-        println("Hello")
         for i in 1:M
             for j in 1:M
                 for ic in 1:length(cell_vectors_raw1)
