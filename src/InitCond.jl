@@ -3,19 +3,19 @@ function init_cond(type, N; dx=1/143, M = 5, α=500.0, β=1000.0, c01 = 1, BC=:P
     @assert M ÷ 2 + 1 == ceil(M/2)
     # Done
     if type==:NoisePatches
-    u01 = c01*ones(N,N)
-    n_rect = rand(20:50)
-    x = collect(-N/2*dx:dx:(N/2-1)*dx) # Global coordinate
-    dy = dx*sqrt(3)/2
-    y = collect(-N/2*dy:dy:(N/2-1)*dy) # Global Coordinate
-    for i = 1:n_rect 
-        l = rand(1:N ÷ 5)
-        w = rand(1:N ÷ 5)
-        sx = rand(1:4*N ÷ 5)
-        sy = rand(1:4*N ÷ 5)
-        val = rand()
-        u01[sx:sx+l,sy:sy+l] .= val
-    end
+        u01 = c01*ones(Float64, N,N)
+        n_rect = rand(20:50)
+        x = collect(-N/2*dx:dx:(N/2-1)*dx) # Global coordinate
+        dy = dx*sqrt(3)/2
+        y = collect(-N/2*dy:dy:(N/2-1)*dy) # Global Coordinate
+        for i = 1:n_rect 
+            l = rand(1:N ÷ 5)
+            w = rand(1:N ÷ 5)
+            sx = rand(1:4*N ÷ 5)
+            sy = rand(1:4*N ÷ 5)
+            val = rand()
+            u01[sx:sx+l,sy:sy+l] .= val
+        end
     elseif type==:Square
         @assert M ≥ 3
         x = collect(-N/2*dx:dx:(N/2-1)*dx) # Global coordinate
@@ -24,7 +24,7 @@ function init_cond(type, N; dx=1/143, M = 5, α=500.0, β=1000.0, c01 = 1, BC=:P
         basis = len*hcat([0,1],[1,0]) |> SMatrix{2,2}
         cell = HomogeneousCell([[0.0,0.0]])
         lattice = RegularLattice((M,M), basis, cell)
-        u01 = zeros(N,N)
+        u01 = zeros(Float64, N,N)
         for i in 1:M
             for j in 1:M
                 ii, jj= (lattice[i,j,1] .- len*(M+1)/2)
@@ -38,7 +38,7 @@ function init_cond(type, N; dx=1/143, M = 5, α=500.0, β=1000.0, c01 = 1, BC=:P
         dy = dx*sqrt(3)/2 # factor of 6/5??
         y = collect(-N/2*dy:dy:(N/2-1)*dy) # Global Coordinate
         #y = [y; y[end]*(1+dx)] # Hack Fix, idk why y sometimes has N-1 elements
-        u01 = zeros(N,N)
+        u01 = zeros(Float64, N,N)
         len = x[end]/(M-3)*2
         # Declare Basis
         fbasis = len*hcat([0.5, 0.5*sqrt(3)],
@@ -51,7 +51,7 @@ function init_cond(type, N; dx=1/143, M = 5, α=500.0, β=1000.0, c01 = 1, BC=:P
         fcell = InhomogeneousCell([fbasis*vec for vec in cell_vectors_raw1], [fbasis*vec for vec in cell_vectors_raw2]; label = :ermno3)
         lattice = RegularLattice((M,M), fbasis, fcell; label = :hexagonal)
 
-        u01 = zeros(N,N)
+        u01 = zeros(Float64, N,N)
         for i in 1:M
             for j in 1:M
                 for ic in 1:length(cell_vectors_raw1)
@@ -95,7 +95,7 @@ function init_cond(type, N; dx=1/143, M = 5, α=500.0, β=1000.0, c01 = 1, BC=:P
         dy = dx*sqrt(3)/2 # factor of 6/5??
         y = collect(-N/2*dy:dy:(N/2-1)*dy) # Global Coordinate
         #y = [y; y[end]*(1+dx)] # Hack Fix, idk why y sometimes has N-1 elements
-        u01 = zeros(N,N)
+        u01 = zeros(Float64, N,N)
         len = x[end]/(M-3)*2
         # Declare Basis
         fbasis = len*hcat([0.5, 0.5*sqrt(3)],
@@ -108,7 +108,8 @@ function init_cond(type, N; dx=1/143, M = 5, α=500.0, β=1000.0, c01 = 1, BC=:P
         fcell = InhomogeneousCell([fbasis*vec for vec in cell_vectors_raw1], [fbasis*vec for vec in cell_vectors_raw2]; label = :ermno3)
         lattice = RegularLattice((M,M), fbasis, fcell; label = :hexagonal)
 
-        u01 = zeros(N,N)
+        u01 = zeros(Float64, N,N)
+        println("Hello")
         for i in 1:M
             for j in 1:M
                 for ic in 1:length(cell_vectors_raw1)
@@ -136,7 +137,7 @@ function init_cond(type, N; dx=1/143, M = 5, α=500.0, β=1000.0, c01 = 1, BC=:P
         dy = dx*sqrt(3)/2 # factor of 6/5??
         y = collect(-N/2*dy:dy:(N/2-1)*dy) # Global Coordinate
         #y = [y; y[end]*(1+dx)] # Hack Fix, idk why y sometimes has N-1 elements
-        u01 = zeros(N,N)
+        u01 = zeros(Float64, N,N)
         len = x[end]/(M-3)*2
         # Declare Basis
         fbasis = len*hcat([0.5, 0.5*sqrt(3)],
@@ -149,7 +150,7 @@ function init_cond(type, N; dx=1/143, M = 5, α=500.0, β=1000.0, c01 = 1, BC=:P
         fcell = InhomogeneousCell([fbasis*vec for vec in cell_vectors_raw1], [fbasis*vec for vec in cell_vectors_raw2]; label = :ermno3)
         lattice = RegularLattice((M,M), fbasis, fcell; label = :hexagonal)
 
-        u01 = zeros(N,N)
+        u01 = zeros(Float64, N,N)
         for i in 1:M
             for j in 1:M
                 for ic in 1:length(cell_vectors_raw2)
@@ -176,7 +177,7 @@ function init_cond(type, N; dx=1/143, M = 5, α=500.0, β=1000.0, c01 = 1, BC=:P
         dy = dx*sqrt(3)/2*6/5 # factor of 6/5
         y = collect(-N/2*dy:dy:(N/2-1)*dy) # Global Coordinate
         #y = [y; y[end]*(1+dx)] # Hack Fix, idk why y sometimes has N-1 elements
-        u01 = zeros(N,N)
+        u01 = zeros(Float64, N,N)
         len = x[end]/(M-3)*2
         # Declare Basis
         fbasis = len*hcat([0.5, 0.5*sqrt(3)],
@@ -188,7 +189,7 @@ function init_cond(type, N; dx=1/143, M = 5, α=500.0, β=1000.0, c01 = 1, BC=:P
         fcell = HomogeneousCell(pos)
         lattice = RegularLattice((M,M), fbasis, fcell; label = :hexagonal)
 
-        u01 = zeros(N,N)
+        u01 = zeros(Float64, N,N)
         for i in 1:M
             for j in 1:M
                 for ic in 1:length(cell_vectors_raw)
@@ -205,7 +206,7 @@ function init_cond(type, N; dx=1/143, M = 5, α=500.0, β=1000.0, c01 = 1, BC=:P
         dy = dx*sqrt(3)/2
         y = collect(-N/2*dy:dy:(N/2-1)*dy) # Global Coordinate
         #y = [y; y[end]*(1+dx)] # Hack Fix, idk why y sometimes has N-1 elements
-        u01 = zeros(N,N)
+        u01 = zeros(Float64, N,N)
         len = x[end]/(M-3)*2
         # Declare Basis
         fbasis = len*hcat([0.5, 0.5*sqrt(3)],
