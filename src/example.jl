@@ -9,7 +9,6 @@ using SparseArrays
 using SparseDiffTools
 using DifferentialEquations, LinearAlgebra
 using AlgebraicMultigrid
-using LoopVectorization
 
 println("Welcome!")
 
