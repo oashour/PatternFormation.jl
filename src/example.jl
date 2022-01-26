@@ -1,19 +1,21 @@
+#using MKL
+
 using Logging: global_logger
 using TerminalLoggers: TerminalLogger
 global_logger(TerminalLogger())
 
-using MKL
 
 using PatternFormation
 using Plots
 using Symbolics
 using SparseArrays
 using SparseDiffTools
-using DifferentialEquations, LinearAlgebra
+using OrdinaryDiffEq, LinearAlgebra
 using AlgebraicMultigrid
 using FLoops
 using IterativeSolvers
 using BenchmarkTools
+using LinearSolve
                       
 # Grid and initial conditions
 const N = 256         
@@ -29,7 +31,7 @@ k = 0.065
 type = "μ"
 D₁ = 2e-5
 D₂ = 1e-5
-N_threads = 1
+N_threads = 16
 BLAS.set_num_threads(N_threads)
 p = [f, k, D₁, D₂, dx, dy, N]
 
@@ -69,8 +71,8 @@ Base.eltype(::IncompleteLU.ILUFactorization{Tv,Ti}) where {Tv,Ti} = Tv
 
 # Solve!
 println("Solving")
-#@profview solve(prob,KenCarp4(precs=algebraicmultigrid), saveat=range(0, stop=tspan[2], length=101), progress=true, progress_steps=1);
-@profview for i in 1:100 solve(prob,KenCarp4(linsolve=linsolve=KrylovJL_GMRES(), precs=incompletelu, concrete_jac=true), saveat=range(0, stop=tspan[2], length=101)) end
+#@profview for i in 1:100 solve(prob,KenCarp4(linsolve=linsolve=KrylovJL_GMRES(), precs=incompletelu, concrete_jac=true), saveat=range(0, stop=tspan[2], length=101)) end
+@btime sol = solve(prob,KenCarp4(linsolve=linsolve=LinearSolve.KrylovJL_GMRES(), precs=incompletelu, concrete_jac=true), saveat=range(0, stop=tspan[2], length=101))
 println("done")
 # Plot!
 #anim = @animate for i in 1:length(sol.t)
