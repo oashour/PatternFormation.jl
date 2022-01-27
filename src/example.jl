@@ -30,8 +30,8 @@ D₁ = 2e-5
 D₂ = 1e-5
 N_threads = 1
 BLAS.set_num_threads(N_threads)
-ex = ThreadedEx(simd = Val(true))
-#ex = ThreadedEx()
+#ex = ThreadedEx(simd = Val(true))
+ex = ThreadedEx()
 p = [f, k, D₁, D₂, dx, dy, N]
 
 tspan = (0.0, 1.0)
@@ -62,11 +62,13 @@ Base.eltype(::IncompleteLU.ILUFactorization{Tv,Ti}) where {Tv,Ti} = Tv
 println("Solving")
 #@profview for i in 1:100 solve(prob,KenCarp4(linsolve=linsolve=KrylovJL_GMRES(), precs=incompletelu, concrete_jac=true), saveat=range(0, stop=tspan[2], length=101)) end
 #println("done")
+@time sol = solve(prob,KenCarp47(linsolve=KrylovJL_GMRES(), precs=incompletelu, concrete_jac=true), saveat=range(0, stop=tspan[2], length=101), progress=true, progress_steps=1)
 
+# Split
 #split_prob = SplitODEProblem(GS_Neumann1!, GS_Neumann2!, u0, tspan, p)
 
+#println("Solving")
 #@time sol = solve(prob,KenCarp4(), saveat=range(0, stop=tspan[2], length=101))
-@benchmark sol = solve(prob,KenCarp4(linsolve=linsolve=KrylovJL_GMRES(), precs=incompletelu, concrete_jac=true), saveat=range(0, stop=tspan[2], length=101))
 
 
 # Plot!
