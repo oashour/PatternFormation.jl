@@ -1,10 +1,8 @@
-#using MKL
-
 using Logging: global_logger
 using TerminalLoggers: TerminalLogger
 global_logger(TerminalLogger())
 
-
+using LinearSolve
 using PatternFormation
 using Plots
 using Symbolics
@@ -15,7 +13,6 @@ using AlgebraicMultigrid
 using FLoops
 using IterativeSolvers
 using BenchmarkTools
-using LinearSolve
                       
 # Grid and initial conditions
 const N = 256         
@@ -31,11 +28,11 @@ k = 0.065
 type = "μ"
 D₁ = 2e-5
 D₂ = 1e-5
-N_threads = 16
+N_threads = 1
 BLAS.set_num_threads(N_threads)
 p = [f, k, D₁, D₂, dx, dy, N]
 
-tspan = (0.0, 1.0)
+tspan = (0.0, 100.0)
 myEquation = GS_Neumann0!
 
 # Jacobian and stuff
@@ -46,15 +43,6 @@ colorvec = matrix_colors(jac_sparsity)
 ff = ODEFunction(myEquation;jac_prototype=jac_sparsity,colorvec=colorvec)
 prob = ODEProblem(ff,u0,tspan,p)
 
-# Preconditioner
-function algebraicmultigrid(W,du,u,p,t,newW,Plprev,Prprev,solverdata)
-  if newW === nothing || newW
-    Pl = aspreconditioner(ruge_stuben(convert(AbstractMatrix,W)))
-  else
-    Pl = Plprev
-  end
-  Pl,nothing
-end
 using IncompleteLU
 function incompletelu(W,du,u,p,t,newW,Plprev,Prprev,solverdata)
   if newW === nothing || newW
@@ -65,21 +53,25 @@ function incompletelu(W,du,u,p,t,newW,Plprev,Prprev,solverdata)
   Pl,nothing
 end
 # Required due to a bug in Krylov.jl: https://github.com/JuliaSmoothOptimizers/Krylov.jl/pull/477
-Base.eltype(::AlgebraicMultigrid.Preconditioner) = Float64
-# Required due to a bug in Krylov.jl: https://github.com/JuliaSmoothOptimizers/Krylov.jl/pull/477
 Base.eltype(::IncompleteLU.ILUFactorization{Tv,Ti}) where {Tv,Ti} = Tv
 
 # Solve!
 println("Solving")
 #@profview for i in 1:100 solve(prob,KenCarp4(linsolve=linsolve=KrylovJL_GMRES(), precs=incompletelu, concrete_jac=true), saveat=range(0, stop=tspan[2], length=101)) end
-@btime sol = solve(prob,KenCarp4(linsolve=linsolve=LinearSolve.KrylovJL_GMRES(), precs=incompletelu, concrete_jac=true), saveat=range(0, stop=tspan[2], length=101))
-println("done")
+#println("done")
+
+#split_prob = SplitODEProblem(GS_Neumann1!, GS_Neumann2!, u0, tspan, p)
+
+#@time sol = solve(prob,KenCarp4(), saveat=range(0, stop=tspan[2], length=101))
+@time sol = solve(prob,KenCarp4(linsolve=linsolve=KrylovJL_GMRES(), precs=incompletelu, concrete_jac=true), saveat=range(0, stop=tspan[2], length=101), progress=true, progress_steps=1)
+
+
 # Plot!
-#anim = @animate for i in 1:length(sol.t)
-#  tit = "$type-type; f = $f, k = $k; t = $(sol.t[i])" 
-#  #u = kron(ones(3,3), sol.u[i][:,:,1])
-#  u = sol.u[i][:,:,1]
-#  heatmap(u, c=:berlin, aspect_ratio=dx/dy, axis=([], false), title=tit, colorbar=false)
-#end
-#
-#gif(anim, fps=10)
+anim = @animate for i in 1:length(sol.t)
+  tit = "$type-type; f = $f, k = $k; t = $(sol.t[i])" 
+  #u = kron(ones(3,3), sol.u[i][:,:,1])
+  u = sol.u[i][:,:,1]
+  heatmap(u, c=:berlin, aspect_ratio=dx/dy, axis=([], false), title=tit, colorbar=false)
+end
+
+gif(anim, fps=10)
