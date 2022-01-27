@@ -1,9 +1,9 @@
 ################################################################################################
 function GS_Periodic!(du, u ,p::Array{Float64, 1},t::Float64) # Works with square and rect grids
-  f, k, D₁, D₂, dx, dy, N = p
+  f, k, D₁, D₂, dx, dy, M = p
 
-  let N = Int(N)
-    @floop for j in 2:N-1, i in 2:N-1
+  let N = Int(M)
+    @tturbo for j in 2:N-1, i in 2:N-1
       du[i,j,1] = D₁*(1/dx^2*(u[i-1,j,1] + u[i+1,j,1] - 2u[i,j,1]) + 1/dy^2*(u[i,j+1,1] + u[i,j-1,1] - 2u[i,j,1])) +
                   -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
       du[i,j,2] = D₂*(1/dx^2*(u[i-1,j,2] + u[i+1,j,2] - 2u[i,j,2]) + 1/dy^2*(u[i,j+1,2] + u[i,j-1,2] - 2u[i,j,2])) +
@@ -11,7 +11,7 @@ function GS_Periodic!(du, u ,p::Array{Float64, 1},t::Float64) # Works with squar
     end
 
     let i = 1
-      @inbounds for j in 2:N-1
+      @tturbo for j in 2:N-1
         du[i,j,1] = D₁*(1/dx^2*(u[N,j,1] + u[i+1,j,1] - 2u[i,j,1]) + 1/dy^2*(u[i,j+1,1] + u[i,j-1,1] - 2u[i,j,1])) +
                     -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
         du[i,j,2] = D₂*(1/dx^2*(u[N,j,2] + u[i+1,j,2] - 2u[i,j,2]) + 1/dy^2*(u[i,j+1,2] + u[i,j-1,2] - 2u[i,j,2])) +
@@ -20,7 +20,7 @@ function GS_Periodic!(du, u ,p::Array{Float64, 1},t::Float64) # Works with squar
     end
 
     let i = N
-      @inbounds for j in 2:N-1
+      @tturbo for j in 2:N-1
         du[i,j,1] = D₁*(1/dx^2*(u[i-1,j,1] + u[1,j,1] - 2u[i,j,1]) + 1/dy^2*(u[i,j+1,1] + u[i,j-1,1] - 2u[i,j,1])) +
                     -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
         du[i,j,2] = D₂*(1/dx^2*(u[i-1,j,2] + u[1,j,2] - 2u[i,j,2]) + 1/dy^2*(u[i,j+1,2] + u[i,j-1,2] - 2u[i,j,2])) +
@@ -29,7 +29,7 @@ function GS_Periodic!(du, u ,p::Array{Float64, 1},t::Float64) # Works with squar
     end
 
     let j = 1
-      @inbounds for i in 2:N-1
+      @tturbo for i in 2:N-1
         du[i,j,1] = D₁*(1/dx^2*(u[i-1,j,1] + u[i+1,j,1] - 2u[i,j,1]) + 1/dy^2*(u[i,j+1,1] + u[i,N,1] - 2u[i,j,1])) +
                     -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
         du[i,j,2] = D₂*(1/dx^2*(u[i-1,j,2] + u[i+1,j,2] - 2u[i,j,2]) + 1/dy^2*(u[i,j+1,2] + u[i,N,2] - 2u[i,j,2])) +
@@ -38,7 +38,7 @@ function GS_Periodic!(du, u ,p::Array{Float64, 1},t::Float64) # Works with squar
     end
 
     let j = N
-      @inbounds for i in 2:N-1
+      @tturbo for i in 2:N-1
         du[i,j,1] = D₁*(1/dx^2*(u[i-1,j,1] + u[i+1,j,1] - 2u[i,j,1]) + 1/dy^2*(u[i,1,1] + u[i,j-1,1] - 2u[i,j,1])) +
                     -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
         du[i,j,2] = D₂*(1/dx^2*(u[i-1,j,2] + u[i+1,j,2] - 2u[i,j,2]) + 1/dy^2*(u[i,1,2] + u[i,j-1,2] - 2u[i,j,2])) +
@@ -46,30 +46,34 @@ function GS_Periodic!(du, u ,p::Array{Float64, 1},t::Float64) # Works with squar
       end
     end
 
-    @inbounds begin
-      i = 1; j = 1
-      du[i,j,1] = D₁*(1/dx^2*(u[N,j,1] + u[i+1,j,1] - 2u[i,j,1]) + 1/dy^2*(u[i,j+1,1] + u[i,N,1] - 2u[i,j,1])) +
-                  -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
-      du[i,j,2] = D₂*(1/dx^2*(u[N,j,2] + u[i+1,j,2] - 2u[i,j,2]) + 1/dy^2*(u[i,j+1,2] + u[i,N,2] - 2u[i,j,2])) +
-                  u[i,j,1]*u[i,j,2]^2 - (f+k)*u[i,j,2]
+    begin
+      let i = 1, j = 1
+        du[i,j,1] = D₁*(1/dx^2*(u[N,j,1] + u[i+1,j,1] - 2u[i,j,1]) + 1/dy^2*(u[i,j+1,1] + u[i,N,1] - 2u[i,j,1])) +
+                    -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
+        du[i,j,2] = D₂*(1/dx^2*(u[N,j,2] + u[i+1,j,2] - 2u[i,j,2]) + 1/dy^2*(u[i,j+1,2] + u[i,N,2] - 2u[i,j,2])) +
+                    u[i,j,1]*u[i,j,2]^2 - (f+k)*u[i,j,2]
+      end
 
-      i = 1; j = N
-      du[i,j,1] = D₁*(1/dx^2*(u[N,j,1] + u[i+1,j,1] - 2u[i,j,1]) + 1/dy^2*(u[i,1,1] + u[i,j-1,1] - 2u[i,j,1])) +
-                  -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
-      du[i,j,2] = D₂*(1/dx^2*(u[N,j,2] + u[i+1,j,2] - 2u[i,j,2]) + 1/dy^2*(u[i,1,2] + u[i,j-1,2] - 2u[i,j,2])) +
-                  u[i,j,1]*u[i,j,2]^2 - (f+k)*u[i,j,2]
+      let i = 1, j = N
+        du[i,j,1] = D₁*(1/dx^2*(u[N,j,1] + u[i+1,j,1] - 2u[i,j,1]) + 1/dy^2*(u[i,1,1] + u[i,j-1,1] - 2u[i,j,1])) +
+                    -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
+        du[i,j,2] = D₂*(1/dx^2*(u[N,j,2] + u[i+1,j,2] - 2u[i,j,2]) + 1/dy^2*(u[i,1,2] + u[i,j-1,2] - 2u[i,j,2])) +
+                    u[i,j,1]*u[i,j,2]^2 - (f+k)*u[i,j,2]
+      end
 
-      i = N; j = 1
-      du[i,j,1] = D₁*(1/dx^2*(u[i-1,j,1] + u[1,j,1] - 2u[i,j,1]) + 1/dy^2*(u[i,j+1,1] + u[i,N,1] - 2u[i,j,1])) +
-                  -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
-      du[i,j,2] = D₂*(1/dx^2*(u[i-1,j,2] + u[1,j,2] - 2u[i,j,2]) + 1/dy^2*(u[i,j+1,2] + u[i,N,2] - 2u[i,j,2])) +
-                  u[i,j,1]*u[i,j,2]^2 - (f+k)*u[i,j,2]
+      let i = N, j = 1
+        du[i,j,1] = D₁*(1/dx^2*(u[i-1,j,1] + u[1,j,1] - 2u[i,j,1]) + 1/dy^2*(u[i,j+1,1] + u[i,N,1] - 2u[i,j,1])) +
+                    -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
+        du[i,j,2] = D₂*(1/dx^2*(u[i-1,j,2] + u[1,j,2] - 2u[i,j,2]) + 1/dy^2*(u[i,j+1,2] + u[i,N,2] - 2u[i,j,2])) +
+                    u[i,j,1]*u[i,j,2]^2 - (f+k)*u[i,j,2]
+      end
 
-      i = N; j = N
-      du[i,j,1] = D₁*(1/dx^2*(u[i-1,j,1] + u[1,j,1] - 2u[i,j,1]) + 1/dy^2*(u[i,1,1] + u[i,j-1,1] - 2u[i,j,1])) +
-                  -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
-      du[i,j,2] = D₂*(1/dx^2*(u[i-1,j,2] + u[1,j,2] - 2u[i,j,2]) + 1/dy^2*(u[i,1,2] + u[i,j-1,2] - 2u[i,j,2])) +
-                  u[i,j,1]*u[i,j,2]^2 - (f+k)*u[i,j,2]
+      let i = N, j = N
+        du[i,j,1] = D₁*(1/dx^2*(u[i-1,j,1] + u[1,j,1] - 2u[i,j,1]) + 1/dy^2*(u[i,1,1] + u[i,j-1,1] - 2u[i,j,1])) +
+                    -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
+        du[i,j,2] = D₂*(1/dx^2*(u[i-1,j,2] + u[1,j,2] - 2u[i,j,2]) + 1/dy^2*(u[i,1,2] + u[i,j-1,2] - 2u[i,j,2])) +
+                    u[i,j,1]*u[i,j,2]^2 - (f+k)*u[i,j,2]
+      end
     end
   end
 
@@ -77,10 +81,10 @@ function GS_Periodic!(du, u ,p::Array{Float64, 1},t::Float64) # Works with squar
 end
 
 function GS_Neumann0!(du, u, p::Array{Float64, 1},t::Float64) # Works with square and rect grids
-  f, k, D₁, D₂, dx, dy, N = p
+  f, k, D₁, D₂, dx, dy, M = p
 
-  let  N = Int(N)
-    @floop for j in 2:N-1, i in 2:N-1
+  let  N = Int(M)
+    @tturbo for j in 2:N-1, i in 2:N-1
       du[i,j,1] = D₁*(1/dx^2*(u[i-1,j,1] + u[i+1,j,1] - 2u[i,j,1])+ 1/dy^2*(u[i,j+1,1] + u[i,j-1,1] - 2u[i,j,1])) +
                   -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
       du[i,j,2] = D₂*(1/dx^2*(u[i-1,j,2] + u[i+1,j,2] - 2u[i,j,2])+ 1/dy^2*(u[i,j+1,2] + u[i,j-1,2] - 2u[i,j,2])) +
@@ -88,7 +92,7 @@ function GS_Neumann0!(du, u, p::Array{Float64, 1},t::Float64) # Works with squar
     end
 
     let i = 1
-      @inbounds for j in 2:N-1
+      @tturbo for j in 2:N-1
         du[i,j,1] = D₁*(1/dx^2*(2u[i+1,j,1] - 2u[i,j,1])+ 1/dy^2*(u[i,j+1,1] + u[i,j-1,1] - 2u[i,j,1])) +
                     -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
         du[i,j,2] = D₂*(1/dx^2*(2u[i+1,j,2] - 2u[i,j,2])+ 1/dy^2*(u[i,j+1,2] + u[i,j-1,2] - 2u[i,j,2])) +
@@ -97,7 +101,7 @@ function GS_Neumann0!(du, u, p::Array{Float64, 1},t::Float64) # Works with squar
     end
 
     let i = N
-      @inbounds for j in 2:N-1
+      @tturbo for j in 2:N-1
         du[i,j,1] = D₁*(1/dx^2*(2u[i-1,j,1] - 2u[i,j,1])+ 1/dy^2*(u[i,j+1,1] + u[i,j-1,1] - 2u[i,j,1])) +
                     -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
         du[i,j,2] = D₂*(1/dx^2*(2u[i-1,j,2] - 2u[i,j,2])+ 1/dy^2*(u[i,j+1,2] + u[i,j-1,2] - 2u[i,j,2])) +
@@ -106,7 +110,7 @@ function GS_Neumann0!(du, u, p::Array{Float64, 1},t::Float64) # Works with squar
     end
 
     let j = 1
-      @inbounds for i in 2:N-1
+      @tturbo for i in 2:N-1
         du[i,j,1] = D₁*(1/dx^2*(u[i-1,j,1] + u[i+1,j,1] - 2u[i,j,1])+ 1/dy^2*(2u[i,j+1,1] - 2u[i,j,1])) +
                     -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
         du[i,j,2] = D₂*(1/dx^2*(u[i-1,j,2] + u[i+1,j,2] - 2u[i,j,2])+ 1/dy^2*(2u[i,j+1,2] - 2u[i,j,2])) +
@@ -115,7 +119,7 @@ function GS_Neumann0!(du, u, p::Array{Float64, 1},t::Float64) # Works with squar
     end
 
     let j = N
-      @inbounds for i in 2:N-1
+      @tturbo for i in 2:N-1
         du[i,j,1] = D₁*(1/dx^2*(u[i-1,j,1] + u[i+1,j,1] - 2u[i,j,1])+ 1/dy^2*(2u[i,j-1,1] - 2u[i,j,1])) +
                     -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
         du[i,j,2] = D₂*(1/dx^2*(u[i-1,j,2] + u[i+1,j,2] - 2u[i,j,2])+ 1/dy^2*(2u[i,j-1,2] - 2u[i,j,2])) +
@@ -123,26 +127,28 @@ function GS_Neumann0!(du, u, p::Array{Float64, 1},t::Float64) # Works with squar
       end
     end
 
-    @inbounds begin
-      i = 1; j = 1
+    let i = 1, j = 1
       du[i,j,1] = D₁*(1/dx^2*(2u[i+1,j,1] - 2u[i,j,1])+ 1/dy^2*(2u[i,j+1,1] - 2u[i,j,1])) +
                   -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
       du[i,j,2] = D₂*(1/dx^2*(2u[i+1,j,2] - 2u[i,j,2])+ 1/dy^2*(2u[i,j+1,2] - 2u[i,j,2])) +
                   u[i,j,1]*u[i,j,2]^2 - (f+k)*u[i,j,2]
+    end
 
-      i = 1; j = N
+    let  i = 1, j = N
       du[i,j,1] = D₁*(1/dx^2*(2u[i+1,j,1] - 2u[i,j,1])+ 1/dy^2*(2u[i,j-1,1] - 2u[i,j,1])) +
                   -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
       du[i,j,2] = D₂*(1/dx^2*(2u[i+1,j,2] - 2u[i,j,2])+ 1/dy^2*(2u[i,j-1,2] - 2u[i,j,2])) +
                   u[i,j,1]*u[i,j,2]^2 - (f+k)*u[i,j,2]
+    end
 
-      i = N; j = 1
+    let  i = N, j = 1
       du[i,j,1] = D₁*(1/dx^2*(2u[i-1,j,1] - 2u[i,j,1])+ 1/dy^2*(2u[i,j+1,1] - 2u[i,j,1])) +
                   -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
       du[i,j,2] = D₂*(1/dx^2*(2u[i-1,j,2] - 2u[i,j,2])+ 1/dy^2*(2u[i,j+1,2] - 2u[i,j,2])) +
                   u[i,j,1]*u[i,j,2]^2 - (f+k)*u[i,j,2]
+    end
 
-      i = N; j = N
+    let  i = N, j = N
       du[i,j,1] = D₁*(1/dx^2*(2u[i-1,j,1] - 2u[i,j,1])+ 1/dy^2*(2u[i,j-1,1] - 2u[i,j,1])) +
                   -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
       du[i,j,2] = D₂*(1/dx^2*(2u[i-1,j,2] - 2u[i,j,2])+ 1/dy^2*(2u[i,j-1,2] - 2u[i,j,2])) +
