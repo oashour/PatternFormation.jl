@@ -30,17 +30,20 @@ D₁ = 2e-5
 D₂ = 1e-5
 N_threads = 1
 BLAS.set_num_threads(N_threads)
+ex = ThreadedEx(simd = Val(true))
+#ex = ThreadedEx()
 p = [f, k, D₁, D₂, dx, dy, N]
 
-tspan = (0.0, 100.0)
+tspan = (0.0, 1.0)
 myEquation = GS_Neumann0!
+func(du,u,p,t) = myEquation(du, u, p, t, ex)
 
 # Jacobian and stuff
 du0 = similar(u0)
-sparsity_pattern = Symbolics.jacobian_sparsity((du,u)->myEquation(du,u,p,0.0),du0,u0)
+sparsity_pattern = Symbolics.jacobian_sparsity((du,u)->func(du,u,p,0.0),du0,u0)
 jac_sparsity = Float64.(sparse(sparsity_pattern))
 colorvec = matrix_colors(jac_sparsity)
-ff = ODEFunction(myEquation;jac_prototype=jac_sparsity,colorvec=colorvec)
+ff = ODEFunction(func;jac_prototype=jac_sparsity,colorvec=colorvec)
 prob = ODEProblem(ff,u0,tspan,p)
 
 using IncompleteLU
@@ -63,15 +66,15 @@ println("Solving")
 #split_prob = SplitODEProblem(GS_Neumann1!, GS_Neumann2!, u0, tspan, p)
 
 #@time sol = solve(prob,KenCarp4(), saveat=range(0, stop=tspan[2], length=101))
-@time sol = solve(prob,KenCarp4(linsolve=linsolve=KrylovJL_GMRES(), precs=incompletelu, concrete_jac=true), saveat=range(0, stop=tspan[2], length=101), progress=true, progress_steps=1)
+@benchmark sol = solve(prob,KenCarp4(linsolve=linsolve=KrylovJL_GMRES(), precs=incompletelu, concrete_jac=true), saveat=range(0, stop=tspan[2], length=101))
 
 
 # Plot!
-anim = @animate for i in 1:length(sol.t)
-  tit = "$type-type; f = $f, k = $k; t = $(sol.t[i])" 
-  #u = kron(ones(3,3), sol.u[i][:,:,1])
-  u = sol.u[i][:,:,1]
-  heatmap(u, c=:berlin, aspect_ratio=dx/dy, axis=([], false), title=tit, colorbar=false)
-end
-
-gif(anim, fps=10)
+#anim = @animate for i in 1:length(sol.t)
+#  tit = "$type-type; f = $f, k = $k; t = $(sol.t[i])" 
+#  #u = kron(ones(3,3), sol.u[i][:,:,1])
+#  u = sol.u[i][:,:,1]
+#  heatmap(u, c=:berlin, aspect_ratio=dx/dy, axis=([], false), title=tit, colorbar=false)
+#end
+#
+#gif(anim, fps=10)
