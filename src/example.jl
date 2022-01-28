@@ -33,13 +33,13 @@ heatmap(u01)
 heatmap(u02)
 
 #Parameters
-f = 0.026
-k = 0.051
-type = "β"
+#f = 0.026
+#k = 0.051
+#type = "β"
 
-#f = 0.046
-#k = 0.065
-#type = "μ"
+f = 0.046
+k = 0.065
+type = "μ"
 
 D₁ = 2e-5
 D₂ = 1e-5
@@ -49,7 +49,7 @@ ex = ThreadedEx(simd = true)
 #ex = ThreadedEx()
 p = [f, k, D₁, D₂, dx, dy, N]
 
-tspan = (0.0, 10000.0)
+tspan = (0.0, 100.0)
 myEquation = GS_Periodic!
 func(du,u,p,t) = myEquation(du, u, p, t, ex)
 
@@ -98,14 +98,16 @@ Base.eltype(::AlgebraicMultigrid.Preconditioner) = Float64
 
 # Split
 #du0 = similar(u0)
-#sparsity_pattern = Symbolics.jacobian_sparsity((du,u)->GS_Neumann1!(du,u,p,0.0),du0,u0)
+#func1(du,u,p,t) = GS_Neumann1!(du, u, p, t, ex)
+#func2(du,u,p,t) = GS_Neumann2!(du, u, p, t, ex)
+#sparsity_pattern = Symbolics.jacobian_sparsity((du,u)->func1(du,u,p,0.0),du0,u0)
 #jac_sparsity = Float64.(sparse(sparsity_pattern))
 #colorvec = matrix_colors(jac_sparsity)
-#ff = ODEFunction(GS_Neumann1!;jac_prototype=jac_sparsity,colorvec=colorvec)
-#split_prob = SplitODEProblem(GS_Neumann1!, GS_Neumann2!, u0, tspan, p)
+#ff = ODEFunction(func1;jac_prototype=jac_sparsity,colorvec=colorvec)
+#split_prob = SplitODEProblem(ff, GS_Neumann2!, u0, tspan, p)
 
 #println("Solving")
-#@time sol = solve(prob,KenCarp4(), saveat=range(0, stop=tspan[2], length=101), progress=true, progress_steps=1)
+#@btime sol = solve(prob,KenCarp47(linsolve=IterativeSolversJL_GMRES(), precs=incompletelu, concrete_jac=true), saveat=range(0, stop=tspan[2], length=101), progress=true, progress_steps=1)
 
 
 # Plot!
