@@ -1,6 +1,6 @@
 ################################################################################################
-function GS_Periodic!(du::Array{T,3}, u::Array{T,3} ,p::Vector{Any},t::Float64, ex) where T <: Real
-  f, k, D₁, D₂, dx, dy, M, ex = p
+function GS_Periodic!(du::Array{T,3}, u::Array{T,3} ,p::Vector{Float64},t::Float64, ex) where T <: Real
+  f, k, D₁, D₂, dx, dy, M = p
 
   let N = Int(M)
     @floop ex for j in 2:N-1, i in 2:N-1
@@ -84,7 +84,7 @@ function GS_Periodic!(du::Array{T,3}, u::Array{T,3} ,p::Vector{Any},t::Float64, 
   nothing
 end
 
-function GS_Neumann0!(du::Array{T,3}, u::Array{T,3} ,p::Vector{Float64},t::Float64,ex;) where T <: Real
+function GS_Neumann0!(du::Array{T,3}, u::Array{T,3} ,p::Vector{Float64},t::Float64,ex) where T <: Real
   f, k, D₁, D₂, dx, dy, M = p
 
   let  N = Int(M)
@@ -165,7 +165,6 @@ function GS_Neumann0!(du::Array{T,3}, u::Array{T,3} ,p::Vector{Float64},t::Float
   end
   nothing 
 end
-
 
 function GS_Neumann1!(du::Array{T,3}, u::Array{T,3}, p::Array{Float64, 1},t::Float64, ex) where T <: Real # Works with square and rect grids
   f, k, D₁, D₂, dx, dy, M = p
