@@ -217,14 +217,14 @@ function GS_Neumann1!(du::Array{T,3}, u::Array{T,3}, p::Array{Float64, 1},t::Flo
       du[i,j,1] = D₁*(1/dx^2*(2u[i+1,j,1] - 2u[i,j,1])+ 1/dy^2*(2u[i,j+1,1] - 2u[i,j,1])) +
                   f*(1-u[i,j,1])
       du[i,j,2] = D₂*(1/dx^2*(2u[i+1,j,2] - 2u[i,j,2])+ 1/dy^2*(2u[i,j+1,2] - 2u[i,j,2])) +
-                  u[i,j,1]*u[i,j,2]^2 - (f+k)*u[i,j,2]
+                  - (f+k)*u[i,j,2]
     end
 
     let  i = 1, j = N
       du[i,j,1] = D₁*(1/dx^2*(2u[i+1,j,1] - 2u[i,j,1])+ 1/dy^2*(2u[i,j-1,1] - 2u[i,j,1])) +
                   f*(1-u[i,j,1])
       du[i,j,2] = D₂*(1/dx^2*(2u[i+1,j,2] - 2u[i,j,2])+ 1/dy^2*(2u[i,j-1,2] - 2u[i,j,2])) +
-                  u[i,j,1]*u[i,j,2]^2 - (f+k)*u[i,j,2]
+                  - (f+k)*u[i,j,2]
     end
 
     let  i = N, j = 1

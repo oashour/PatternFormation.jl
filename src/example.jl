@@ -97,17 +97,17 @@ Base.eltype(::AlgebraicMultigrid.Preconditioner) = Float64
 #println("Done!")
 
 # Split
-#du0 = similar(u0)
-#func1(du,u,p,t) = GS_Neumann1!(du, u, p, t, ex)
-#func2(du,u,p,t) = GS_Neumann2!(du, u, p, t, ex)
-#sparsity_pattern = Symbolics.jacobian_sparsity((du,u)->func1(du,u,p,0.0),du0,u0)
-#jac_sparsity = Float64.(sparse(sparsity_pattern))
-#colorvec = matrix_colors(jac_sparsity)
-#ff = ODEFunction(func1;jac_prototype=jac_sparsity,colorvec=colorvec)
-#split_prob = SplitODEProblem(ff, GS_Neumann2!, u0, tspan, p)
+du0 = similar(u0)
+func1(du,u,p,t) = GS_Neumann1!(du, u, p, t, ex)
+func2(du,u,p,t) = GS_Neumann2!(du, u, p, t, ex)
+sparsity_pattern = Symbolics.jacobian_sparsity((du,u)->func1(du,u,p,0.0),du0,u0)
+jac_sparsity = Float64.(sparse(sparsity_pattern))
+colorvec = matrix_colors(jac_sparsity)
+ff = ODEFunction(func1;jac_prototype=jac_sparsity,colorvec=colorvec)
+split_prob = SplitODEProblem(ff, GS_Neumann2!, u0, tspan, p)
 
 #println("Solving")
-#@btime sol = solve(prob,KenCarp47(linsolve=IterativeSolversJL_GMRES(), precs=incompletelu, concrete_jac=true), saveat=range(0, stop=tspan[2], length=101), progress=true, progress_steps=1)
+@btime sol = solve(prob,KenCarp47(linsolve=IterativeSolversJL_GMRES(), precs=incompletelu, concrete_jac=true), saveat=range(0, stop=tspan[2], length=101), progress=true, progress_steps=1)
 
 
 # Plot!
