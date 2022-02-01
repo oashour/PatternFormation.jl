@@ -10,15 +10,9 @@ global_logger(TerminalLogger())
 using PatternFormation
 using LinearSolve
 using Plots
-using Symbolics
-using SparseArrays
-using SparseDiffTools
 using OrdinaryDiffEq, LinearAlgebra
-using AlgebraicMultigrid
 using FLoops
 using BenchmarkTools
-
-using IncompleteLU
                       
 # Grid and initial conditions
 const N = 2000
@@ -34,7 +28,6 @@ D₂ = 1e-5
 N_threads = 1
 BLAS.set_num_threads(N_threads)
 ex = ThreadedEx(simd = true)
-p = [f, k, D₁, D₂, dx, dy, N]
 
 println("Hello")
 
@@ -46,8 +39,9 @@ u02, x, y, dx, dy = init_cond(:ErMnO3_ErOnly, N, M = 21, α=500, γ = 3000, BC=:
 #u02, x, y, dx, dy = init_cond(:ErMnO3_ErOnly, N, M = 21, α=500, BC=:Periodic)
 u01 = 1 .- u01        
 u0 = cat(u01, u02, dims=3)
-heatmap(x, y, u01')
-heatmap(x, y, u02')
+#heatmap(x, y, u01')
+#heatmap(x, y, u02')
+p = [f, k, D₁, D₂, dx, dy, N]
 
 func(du,u,p,t) = myEquation(du, u, p, t, ex)
 prob = ODEProblem(func, u0, tspan, p)
