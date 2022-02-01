@@ -62,6 +62,7 @@ function GS_Neumann0!(du::Array{T,3}, u::Array{T,3} ,p::Vector{Float64},t::Float
 
   let  N = Int(M)
     @floop ex for j in 2:N-1, i in 2:N-1
+      @inbounds begin
         if i == 1 && j != N && j != 1 # left boundary
           du[i,j,1] = D₁*(1/dx^2*(2u[i+1,j,1] - 2u[i,j,1])+ 1/dy^2*(u[i,j+1,1] + u[i,j-1,1] - 2u[i,j,1])) +
                       -u[i,j,1]*u[i,j,2]^2 + f*(1-u[i,j,1])
@@ -110,6 +111,7 @@ function GS_Neumann0!(du::Array{T,3}, u::Array{T,3} ,p::Vector{Float64},t::Float
         end
       end
     end
+  end
   nothing 
 end
 ##################################################################################
