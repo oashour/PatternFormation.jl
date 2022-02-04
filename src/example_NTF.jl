@@ -16,16 +16,16 @@ using BenchmarkTools
 using Distributions
                       
 # Grid and initial conditions
-const N = 100
+const N = 900
 myEquation = NTF_Periodic!
-tspan = (0.0, 100.0)
+tspan = (0.0, 30000.0)
 
-Mᵤ = 1
-Mᵥ = 1
-γᵤ = 1e-4
-γᵥ = 1e-4
-a = 0.5*0
-c = 0.00125*0
+Mᵤ = 1e-5
+Mᵥ = 1e-5
+γᵤ = 1e-2
+γᵥ = 1e-2
+a = 0.5
+c = 0.00125
 N_threads = 1
 BLAS.set_num_threads(N_threads)
 ex = ThreadedEx(simd = true)
@@ -36,21 +36,21 @@ println("Hello")
 #u02, x, y, dx, dy = init_cond(:ErMnO3_ErOnly, N, M = 21, α=500, γ = 3000, BC=:Neumann, r₀=0.01, n_vd = 100, n_id = 100)
 #u01, x, y, dx, dy = init_cond(:ErMnO3_MnOnly, N, M = 21, α=3000, BC=:Neumann, r₀=0.01)
 #u02, x, y, dx, dy = init_cond(:ErMnO3_ErOnly, N, M = 21, α=500, BC=:Neumann, r₀=0.01)
-#u01, x, y, dx, dy = init_cond(:ErMnO3_MnOnly, N, M = 21, α=3000, BC=:Periodic)
-#u02, x, y, dx, dy = init_cond(:ErMnO3_ErOnly, N, M = 21, α=500, BC=:Periodic)
+#u01, x, y, dx, dy = init_cond(:ErMnO3_MnOnly, N, M = 9, α=3000, BC=:Periodic)
+#u02, x, y, dx, dy = init_cond(:ErMnO3_ErOnly, N, M = 9, α=500, BC=:Periodic)
 #u01 = 1 .- u01        
-#u01, x, y, dx, dy = init_cond(:NoisePatches, N, c01 = 0.01)
-#u02, x, y, dx, dy = init_cond(:NoisePatches, N, c01 = 0.25)
+u01, x, y, dx, dy = init_cond(:NoisePatches, N, c01 = 0.01, dx = 1/3)
+u02, x, y, dx, dy = init_cond(:NoisePatches, N, c01 = 0.25, dx = 1/3)
 #u01 = sin.(x .+ y')
 #u02 = cos.(x .+ y')
-#u01 .= 0.25 .+ rand(Uniform(-0.25/100, +0.25/100), N, N)
-#u02 .= 0.01 .+ rand(Uniform(-0.01/100, +0.01/100), N, N)
-u01, x, y, dx, dy = init_cond(:ErMnO3_ErOnly, N, M = 9, α=3000, BC=:Neumann, c01 = 0.01)
-u02, x, y, dx, dy = init_cond(:ErMnO3_ErOnly, N, M = 9, α=500, BC=:Neumann, c01 = 0.25)
+u01 .= 0.01 .+ rand(Uniform(-0.01/100, +0.01/100), N, N)
+u02 .= 0.25 .+ rand(Uniform(-0.25/100, +0.25/100), N, N)
+#u01, x, y, dx, dy = init_cond(:ErMnO3_ErOnly, N, M = 13, α=3000, BC=:Neumann, c01 = 0.01)
+#u02, x, y, dx, dy = init_cond(:ErMnO3_ErOnly, N, M = 13, α=500, BC=:Neumann, c01 = 0.25)
 u0 = cat(u01, u02, dims=3)
 heatmap(x, y, u01')
 heatmap(x, y, u02')
-p = [Mᵤ, Mᵥ, γᵤ, γᵥ, c, a, dx, dy, N]
+p = [Mᵤ, Mᵥ, γᵤ, γᵥ, a, c, dx, dy, N]
 
 func(du,u,p,t) = myEquation(du, u, p, t, ex)
 prob = ODEProblem(func, u0, tspan, p)
@@ -64,10 +64,11 @@ println("Done!")
 # Plot!
 println("Plotting")
 anim = @animate for i in 1:length(sol.t)
-  #tit = "$type-type; f = $f, k = $k; t = $(sol.t[i])" 
+  tit = "t = $(sol.t[i])" 
   #u = kron(ones(3,3), sol.u[i][:,:,1])
-  u = sol.u[i][:,:,1]
-  heatmap(u, c=:grays, aspect_ratio=dx/dy, axis=([], false), colorbar=false, clims=(minimum(u),maximum(u)))
+  u = sol.u[i][:,:,2]
+  #heatmap(u, c=:grays, aspect_ratio=dx/dy, axis=([], false), colorbar=false, clims=(minimum(u),maximum(u)), title=tit)
+  heatmap(u, c=:grays, aspect_ratio=dx/dy, axis=([], false), colorbar=true, title=tit)
 end
 #
 gif(anim, fps=10)

@@ -13,8 +13,10 @@ function init_cond(type, N; dx=1/143, M = 5, α=500.0, β=1000.0, c01 = 1, BC=:P
             w = rand(1:N ÷ 5)
             sx = rand(1:4*N ÷ 5)
             sy = rand(1:4*N ÷ 5)
-            val = rand(Uniform(c01*-0.01, c01*+0.01))
-            u01[sx:sx+l,sy:sy+l] .= c01 + val
+            #val = rand(Uniform(c01*-0.01, c01*+0.01))
+            #u01[sx:sx+l,sy:sy+l] .= c01 + val
+            val = rand()
+            u01[sx:sx+l,sy:sy+l] .= val
         end
     elseif type==:Square
         @assert M ≥ 3
