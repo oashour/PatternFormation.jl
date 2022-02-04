@@ -92,7 +92,7 @@ r0 = cat(r01, r02, dims=3)
 #jac_sparsity = Symbolics.jacobian_sparsity((dr,r)->basic_version!(dr,r,p,0.0),dr0,r0)
 #f = ODEFunction(basic_version!;jac_prototype=float.(jac_sparsity))
 
-tspan = (0.0, 30000.0)
+tspan = (0.0, 5000.0)
 prob = ODEProblem(basic_version!,r0,tspan,p)
 @time sol = solve(prob, ROCK2(), saveat=range(0.0, stop=tspan[2], length=101), progress=true, progress_steps=1)
 
