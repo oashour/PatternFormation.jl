@@ -21,7 +21,7 @@ c = 0.00125
 
 dx = 1/100
 dy = 1/100
-N = 1000
+N = 10
 tspan = (0.0, 100.0)
 
 # IC
@@ -70,6 +70,21 @@ cache =  [A4u, uA4, D4u, A4v, vA4, D4v, A2u, uA2, D2u, A2v, vA2, D2v, A1u, uA1, 
 p = [Mᵤ, Mᵥ, γᵤ, γᵥ, a, c, dx, dy, A1, A2, A4, cache]
 
 function basic_version!(dr,r,p,t)
+  Mᵤ, Mᵥ, γᵤ, γᵥ, a, c, dx, dy, A1, A2, A4 = p
+
+  u = @view r[:,:,1]
+  v = @view r[:,:,2]
+  D4u = -γᵤ*Mᵤ*(1/dy^4*A4*u + 1/dx^4*u*A4')
+  D4v = -γᵥ*Mᵥ*(1/dy^4*A4*v + 1/dx^4*v*A4')
+  D2u = 2Mᵤ*(6u.^2 .- 6u .+ 1).*(1/dy^2*A2*u + 1/dx^2*u*A2')
+  D2v = 2Mᵥ*(6v.^2 .- 6v .+ 1).*(1/dy^2*A2*v + 1/dx^2*v*A2')
+  D1u = 12Mᵤ*(2u .- 1).*(1/dy*A1*u + 1/dx*u*A1').^2
+  D1v = 12Mᵥ*(2v .- 1).*(1/dy*A1*v + 1/dx*v*A1').^2
+  dr[:,:,1] = D4u + D2u + D1u .+ c .- a*v*u 
+  dr[:,:,2] = D4v + D2v + D1v .+ c .- a*v*u
+end
+
+function advanced_version!(dr,r,p,t)
   Mᵤ, Mᵥ, γᵤ, γᵥ, a, c, dx, dy, A1, A2, A4, cache = p
   A4u, uA4, D4u, A4v, vA4, D4v, A2u, uA2, D2u, A2v, vA2, D2v, A1u, uA1, D1u, A1v, vA1, D1v = cache
 
@@ -134,13 +149,13 @@ end
 
 # Jacobian stuff
 println("Jacobian sparsity")
-#dr0 = copy(r0)
-#jac_sparsity = Symbolics.jacobian_sparsity((dr,r)->basic_version!(dr,r,p,0.0),dr0,r0)
-#f = ODEFunction(basic_version!;jac_prototype=float.(jac_sparsity))
+dr0 = copy(r0)
+jac_sparsity = Symbolics.jacobian_sparsity((dr,r)->basic_version!(dr,r,p,0.0),dr0,r0)
+#f = ODEFunction(advanced_version!;jac_prototype=float.(jac_sparsity))
 
 #println("Solving")
-prob = ODEProblem(f,r0,tspan,p)
-@time sol = solve(prob, Tsit5(), saveat=range(0.0, stop=tspan[2], length=101), progress=true, progress_steps=1)
+#prob = ODEProblem(f,r0,tspan,p)
+#@time sol = solve(prob, Tsit5(), saveat=range(0.0, stop=tspan[2], length=101), progress=true, progress_steps=1)
 #
 #println("Plotting")
 #anim = @animate for i in 1:length(sol.t)
