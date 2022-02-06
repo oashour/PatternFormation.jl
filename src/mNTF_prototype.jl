@@ -51,21 +51,21 @@ Base.eltype(::IncompleteLU.ILUFactorization{Tv,Ti}) where {Tv,Ti} = Tv
 Problem parameters
 ===============================================================#
 println("Setting up problem parameters")
-Mᵤ =  1e3
+Mᵤ =  1
 Mᵥ =  1
-γᵤ =  1e2
-γᵥ =  1e2
-a = 1.0 # F
+γᵤ =  1e2*0
+γᵥ =  1e2*0
+a = 0.5 # F
 c = 0.00125 #k
 type = "ρ"
 
 #==============================================================
 Grid parameters
 ===============================================================#
-dx = 1/16
-dy = 1/16
+dx = 1/2
+dy = 1/2
 N = 256
-tspan = (0.0, 4000.0)
+tspan = (0.0, 1e10)
 
 #=============================================================
 Initial Conditions
@@ -146,13 +146,13 @@ function advanced_version!(dr,r,p,t)
   @. v_i = 2v*(v-1)*(2v-1) - γᵥ*(1/dy^2*A2v + 1/dx^2*vA2)
   mul!(A2u_i,A2,u_i)
   mul!(u_iA2,u_i,A2')
-  mul!(A2v_i,A2,v)
-  mul!(v_iA2,v,A2')
+  mul!(A2v_i,A2,v_i)
+  mul!(v_iA2,v_i,A2')
 
   @. D2u = Mᵤ*(1/dy^2*A2u_i + 1/dx^2*u_iA2)
   @. D2v = Mᵥ*(1/dy^2*A2v_i + 1/dx^2*v_iA2)
   @. du = D2u - F*u*v + k#+ F*(1-u)
-  @. dv = D2v + F*u*v + k #- (F+k)*v
+  @. dv = D2v - F*u*v + k #- (F+k)*v
   nothing
 end
 
@@ -178,8 +178,8 @@ end
 Compute the Jacobian sparsity pattern
 ==================================================================#
 println("Jacobian sparsity")
-#dr0 = copy(r0)
-#@time jac_sparsity = Symbolics.jacobian_sparsity((dr,r)->basic_version!(dr,r,p,0.0),dr0,r0)
+dr0 = copy(r0)
+@time jac_sparsity = Symbolics.jacobian_sparsity((dr,r)->basic_version!(dr,r,p,0.0),dr0,r0)
 #using JLD
 #jac_sparsity = load("j800_p.jld", "jac_sparsity")
 f = ODEFunction(advanced_version!;jac_prototype=float.(jac_sparsity))
