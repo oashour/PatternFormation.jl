@@ -43,7 +43,7 @@ Grid parameters
 dx = 1
 dy = 1
 N = 100
-tspan = (0.0, 3e4)
+tspan = (0.0, 1e3)
 #=============================================================
 Initial Conditions
 =============================================================#
@@ -133,7 +133,7 @@ end
 Basic Version for computing Jacobian sparsity
 ==============================================================#
 function basic_version!(dr,r,p,t)
-  Mᵤ, Mᵥ, γᵤ, γᵥ, F, k, dx, dy, A2, cache = p
+  Mᵤ, Mᵥ, γᵤ, γᵥ, a, c, dx, dy, A2, cache = p
 
   u = @view r[:,:,1]
   v = @view r[:,:,2]
@@ -142,8 +142,8 @@ function basic_version!(dr,r,p,t)
   v_n = 2v.*(v.-1).*(2v.-1) .- γᵥ*(1/dy^2*A2*v + 1/dx^2*v*A2')
   D2u = Mᵤ*(1/dy^2*A2*u_n + 1/dx^2*u_n*A2')
   D2v = Mᵥ*(1/dy^2*A2*v_n + 1/dx^2*v_n*A2')
-  dr[:,:,1] = D2u .- u.*v.^2 .+ F*(1 .- u)
-  dr[:,:,2] = D2v .+ u.*v.^2 .- (F+k)*v
+  dr[:,:,1] = D2u .- a*u.*v .+ c
+  dr[:,:,2] = D2v .- a*u.*v .+ c
   nothing
 end
 #=================================================================
@@ -153,15 +153,12 @@ println("Jacobian sparsity")
 dr0 = copy(r0)
 @time jac_sparsity = Symbolics.jacobian_sparsity((dr,r)->basic_version!(dr,r,p,0.0),dr0,r0)
 f = ODEFunction(advanced_version!;jac_prototype=float.(jac_sparsity))
-
 #==================================================================
 Solve the system
 ==================================================================#
 println("Solving")
 prob = ODEProblem(f,r0,tspan,p)
 @time sol = solve(prob, TRBDF2(linsolve=IterativeSolversJL_GMRES(), precs=incompletelu, concrete_jac=true), saveat=range(0.0, stop=tspan[2], length=101), progress=true, progress_steps=1);
-
-
 #==================================================================
 Plot
 ==================================================================#
