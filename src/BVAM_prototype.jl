@@ -31,33 +31,38 @@ Base.eltype(::IncompleteLU.ILUFactorization{Tv,Ti}) where {Tv,Ti} = Tv
 Problem parameters
 ===============================================================#
 println("Setting up problem parameters")
-Mᵤ =  10.0
-Mᵥ =  1.0
-γᵤ =  1.0
-γᵥ =  1.0
-ū = 0.4
-v̄ = 0.25
-a = 0.5
-c = a*ū*v̄^2/(1-v̄^2)
+ū = 0.88
+v̄ = 0.37
+D = 0.5
+β = -1.0 #FIXEf0
+r₁ = 3.0
+r₂ = 10.0
+α = -(v̄ - ū*v̄*r₂)/(ū - ū*v̄^2*r₁)
+γ = -α
+δ = 1.0; #1/(5*pi)^2*(α + β*D)/(2D)
+γᵤ =  10.0
+γᵥ =   1.0
 #==============================================================
 Grid parameters
 ===============================================================#
 dx = 1
 dy = 1
-N = 100
-tspan = (0.0, 5e3)
+N = 200
+tspan = (0.0, 1e3)
 #=============================================================
 Initial Conditions
 =============================================================#
 println("Initial Conditions")
+#r01 = rand(Uniform(-0.5, +0.5), N, N)
+#r02 = rand(Uniform(-0.5, +0.5), N, N)
 r01 = ū .+ rand(Uniform(-ū/100, +ū/100), N, N)
 r02 = v̄ .+ rand(Uniform(-v̄/100, +v̄/100), N, N)
 x = range(0, N*dx, length=N)
 y = range(0, N*dy, length=N)
 #r01, x, y, dx, dy = init_cond(:NoisePatches, N, c01 = ū, dx = dx)
 #r02, x, y, dx, dy = init_cond(:NoisePatches, N, c01 = v̄, dx = dx)
-#r01, x, y, dx, dy = init_cond(:ErMnO3_MnOnly, N, M = 15, α=3000, BC=:Neumann, c01 =ū, f = +0.01, dx = dx)
-#r02, x, y, dx, dy = init_cond(:ErMnO3_ErOnly, N, M = 15, α=500, BC=:Neumann, c01 =v̄, f = -0.01, dx = dx)
+#r01, x, y, dx, dy = init_cond(:ErMnO3_MnOnly, N, M = 15, α=0.3*4, BC=:Periodic, c01 =ū, f = 0.01, dx = dx)
+#r02, x, y, dx, dy = init_cond(:ErMnO3_ErOnly, N, M = 15, α=0.06*4, BC=:Periodic, c01 =v̄, f = 0.01, dx = dx)
 #r01 .= 1 .- r01
 r0 = cat(r01, r02, dims=3)
 #=============================================================
@@ -90,12 +95,12 @@ u_ni = DiffEqBase.dualcache(zeros(N,N))
 v_ni = DiffEqBase.dualcache(zeros(N,N))
 
 cache =(A2u, uA2, D2u, A2v, vA2, D2v, A2u_i, u_iA2, u_i, A2v_i, v_iA2, v_i)
-p = (Mᵤ, Mᵥ, γᵤ, γᵥ, a, c, dx, dy, A2, cache)
+p = (D, δ, γᵤ, γᵥ, α, β, γ, r₁, r₂, dx, dy, A2, cache)
 #==========================================================
 Advanced versoin of the PDE, for solving
 ===========================================================#
 function advanced_version!(dr,r,p,t)
-  Mᵤ, Mᵥ, γᵤ, γᵥ, a, c, dx, dy, A2, cache = p
+  D, δ, γᵤ, γᵥ, α, β, γ, r₁, r₂, dx, dy, A2, cache = p
   A2u, uA2, D2u, A2v, vA2, D2v, A2u_i, u_iA2, u_i, A2v_i, v_iA2, v_i =  cache
 
   u = @view r[:,:,1]
@@ -127,27 +132,31 @@ function advanced_version!(dr,r,p,t)
   mul!(A2v_i,A2,v_i)
   mul!(v_iA2,v_i,A2')
 
-  @. D2u = Mᵤ*(1/dy^2*A2u_i + 1/dx^2*u_iA2)
-  @. D2v = Mᵥ*(1/dy^2*A2v_i + 1/dx^2*v_iA2)
-  @. du = D2u - a*u*v^2 + c*(1-v^2)
-  @. dv = D2v - a*u*v^2 + c*(1-v^2)
+  @. D2u = δ*D*(1/dy^2*A2u_i + 1/dx^2*u_iA2)
+  @. D2v = δ*(1/dy^2*A2v_i + 1/dx^2*v_iA2)
+  #@. D2u = δ*D*(1/dy^2*A2u + 1/dx^2*uA2)
+  #@. D2v = δ*(1/dy^2*A2v + 1/dx^2*vA2)
+  @. du = D2u + α*u*(1-r₁*v^2) + v*(1 - r₂*u)
+  @. dv = D2v + β*v*(1+α*r₁/β*u*v) + u*(γ + r₂*v)
   nothing
 end
 #=============================================================
 Basic Version for computing Jacobian sparsity
 ==============================================================#
 function basic_version!(dr,r,p,t)
-  Mᵤ, Mᵥ, γᵤ, γᵥ, a, c, dx, dy, A2, cache = p
+  D, δ, γᵤ, γᵥ, α, β, γ, r₁, r₂, dx, dy, A2, cache = p
 
   u = @view r[:,:,1]
   v = @view r[:,:,2]
   
   u_n = 2u.*(u.-1).*(2u.-1) .- γᵤ*(1/dy^2*A2*u + 1/dx^2*u*A2')
   v_n = 2v.*(v.-1).*(2v.-1) .- γᵥ*(1/dy^2*A2*v + 1/dx^2*v*A2')
-  D2u = Mᵤ*(1/dy^2*A2*u_n + 1/dx^2*u_n*A2')
-  D2v = Mᵥ*(1/dy^2*A2*v_n + 1/dx^2*v_n*A2')
-  dr[:,:,1] = D2u .- a*u.*v.^2 .+ c*(1 .- v.^2)
-  dr[:,:,2] = D2v .- a*u.*v.^2 .+ c*(1 .- v.^2)
+  D2u = D*δ*(1/dy^2*A2*u_n + 1/dx^2*u_n*A2')
+  D2v = δ*(1/dy^2*A2*v_n + 1/dx^2*v_n*A2')
+  #D2u = D*δ*(1/dy^2*A2*u + 1/dx^2*u*A2')
+  #D2v = δ*(1/dy^2*A2*v + 1/dx^2*v*A2')
+  dr[:,:,1] = D2u .+ α*u.*(1 .- r₁*v.^2) .+ v.*(1 .- r₂*u)
+  dr[:,:,2] = D2v .+ β*v.*(1 .+ α*r₁/β*u.*v) .+ u.*(γ .+ r₂*v)
   nothing
 end
 #=================================================================
@@ -164,6 +173,7 @@ Solve the system
 println("Solving")
 prob = ODEProblem(f,r0,tspan,p)
 @time sol = solve(prob, TRBDF2(linsolve=KrylovJL_GMRES(), precs=incompletelu, concrete_jac=true), saveat=range(0.0, stop=tspan[2], length=101), progress=true, progress_steps=1);
+#@time sol = solve(prob, ROCK2(), saveat=range(0.0, stop=tspan[2], length=101), progress=true, progress_steps=1);
 
 
 #==================================================================
@@ -172,10 +182,10 @@ Plot
 println("Plotting")
 anim = @animate for i in 1:length(sol.t)
   title = "t = $(sol.t[i])"
-  u = kron(ones(3,3), sol.u[i][:,:,1])
-  #u = sol.u[i][:,:,1]
-  #heatmap(x, y, u, c=:roma, aspect_ratio=1, axis=([], false), title=title, colorbar=false)
-  heatmap(u, c=:roma, aspect_ratio=dy/dx, axis=([], false), title=title, colorbar=false)
+  #u = kron(ones(3,3), sol.u[i][:,:,1])
+  u = sol.u[i][:,:,2]
+  heatmap(x, y, u, c=:roma, aspect_ratio=1, axis=([], false), title=title, colorbar=false)
+  #heatmap(u, c=:roma, aspect_ratio=dy/dx, axis=([], false), title=title, colorbar=false)
 end
 
 gif(anim, fps=10)

@@ -10,12 +10,12 @@ global_logger(TerminalLogger())
 using PatternFormation
 using LinearSolve
 using Plots
-using OrdinaryDiffEq, LinearAlgebra
+using OrdinaryDiffEq, LinearAlgebra, Symbolics
 using FLoops
 using BenchmarkTools
                       
 # Grid and initial conditions
-const N = 2000
+const N = 256 
 myEquation = GS_Neumann0!
 tspan = (0.0, 10000.0)
 
@@ -43,8 +43,25 @@ u0 = cat(u01, u02, dims=3)
 #heatmap(x, y, u02')
 p = [f, k, D₁, D₂, dx, dy, N]
 
+
+#function basic_version_GS!(dr,r,p,t)
+#  Mᵤ, Mᵥ, γᵤ, γᵥ, a, c, dx, dy, A1, A2, A4 = p
+#
+#  u = @view r[:,:,1]
+#  v = @view r[:,:,2]
+#  D2u = Mᵤ*(1/dy^2*A2*u + 1/dx^2*u*A2')
+#  D2v = Mᵥ*(1/dy^2*A2*v + 1/dx^2*v*A2')
+#  dr[:,:,1] = D2u .- u.*v.^2 + a*(1 .- u)
+#  dr[:,:,2] = D2v .+ u.*v.^2 - (a+c)*v
+#end
+
 func(du,u,p,t) = myEquation(du, u, p, t, ex)
 prob = ODEProblem(func, u0, tspan, p)
+
+# Check stuff
+#du0 = copy(u0)
+#jac_sparsity = Symbolics.jacobian_sparsity((du,u)->func(du,u,p,0.0),du0,u0)
+#f = ODEFunction(func;jac_prototype=float.(jac_sparsity))
 
 # Solve!
 println("Solving")

@@ -1,4 +1,4 @@
-function init_cond(type, N; dx=1/143, M = 5, α=500.0, β=1000.0, c01 = 1, BC=:Periodic, r₀ = 0.0, n_id = 0, n_vd = 0, γ = 50.0)
+function init_cond(type, N; dx=1/143, M = 5, α=500.0, β=1000.0, c01 = 1, BC=:Periodic, r₀ = 0.0, n_id = 0, n_vd = 0, γ = 50.0, f = 0.01)
     # Use odd sized pattern
     @assert M ÷ 2 + 1 == ceil(M/2)
     # Done
@@ -13,10 +13,10 @@ function init_cond(type, N; dx=1/143, M = 5, α=500.0, β=1000.0, c01 = 1, BC=:P
             w = rand(1:N ÷ 5)
             sx = rand(1:4*N ÷ 5)
             sy = rand(1:4*N ÷ 5)
-            #val = rand(Uniform(c01*-0.01, c01*+0.01))
-            #u01[sx:sx+l,sy:sy+l] .= c01 + val
-            val = rand()
-            u01[sx:sx+l,sy:sy+l] .= val
+            val = rand(Uniform(-c01*f, +c01*f))
+            u01[sx:sx+l,sy:sy+w] .= c01 + val
+            #val = rand()
+            #u01[sx:sx+l,sy:sy+w] .= val
         end
     elseif type==:Square
         @assert M ≥ 3
@@ -55,7 +55,8 @@ function init_cond(type, N; dx=1/143, M = 5, α=500.0, β=1000.0, c01 = 1, BC=:P
         fcell = InhomogeneousCell([fbasis*vec for vec in cell_vectors_raw1], [fbasis*vec for vec in cell_vectors_raw2]; label = :ermno3)
         lattice = RegularLattice((M,M), fbasis, fcell; label = :hexagonal)
 
-        u01 = zeros(Float64, N,N)
+        #u01 = zeros(Float64, N,N)
+        u01 = zeros(Float64, N, N)
         for i in 1:M
             for j in 1:M
                 for ic in 1:length(cell_vectors_raw1)
@@ -193,10 +194,12 @@ function init_cond(type, N; dx=1/143, M = 5, α=500.0, β=1000.0, c01 = 1, BC=:P
                       else
                         x₀ = r₀*x[end]*rand()
                         y₀ = r₀*x[end]*rand()
-                        u01 .+= 0.01*exp.(-α*((x .- ii .- x₀).^2 .+ (y' .- jj .- y₀).^2))
+                        val = sign(rand(Uniform(-c01*f, +c01*f)))
+                        u01 .+= f*c01*val*exp.(-α*((x .- ii .- x₀).^2 .+ (y' .- jj .- y₀).^2))
                       end
                       else
-                        u01 .+= 0.01*exp.(-α*((x .- ii).^2 .+ (y' .- jj).^2))
+                        val = sign(rand(Uniform(-c01*f, +c01*f)))
+                        u01 .+= f*c01*val*exp.(-α*((x .- ii).^2 .+ (y' .- jj).^2))
                     end
                 end
                 for ic in 1:length(cell_vectors_raw2)
@@ -208,7 +211,8 @@ function init_cond(type, N; dx=1/143, M = 5, α=500.0, β=1000.0, c01 = 1, BC=:P
                     if (i, j, ic) ∈ zi
                         x₀ = r₀*x[end]*rand()
                         y₀ = r₀*x[end]*rand()
-                        u01 .+= 0.01*exp.(-γ*((x .- ii .- x₀).^2 .+ (y' .- jj .- y₀).^2))
+                        val = sign(rand(Uniform(-c01*f, +c01*f)))
+                        u01 .+= f*c01*val*exp.(-γ*((x .- ii .- x₀).^2 .+ (y' .- jj .- y₀).^2))
                     end
                 end
             end
@@ -233,7 +237,7 @@ function init_cond(type, N; dx=1/143, M = 5, α=500.0, β=1000.0, c01 = 1, BC=:P
         fcell = InhomogeneousCell([fbasis*vec for vec in cell_vectors_raw1], [fbasis*vec for vec in cell_vectors_raw2]; label = :ermno3)
         lattice = RegularLattice((M,M), fbasis, fcell; label = :hexagonal)
 
-        u01 = zeros(Float64, N,N)
+        u01 = c01*ones(Float64, N,N)
         i_vd = rand(1:M, 1, n_vd)
         j_vd = rand(1:M, 1, n_vd)
         ic_vd = rand(1:length(cell_vectors_raw1), 1, n_vd)
@@ -256,10 +260,12 @@ function init_cond(type, N; dx=1/143, M = 5, α=500.0, β=1000.0, c01 = 1, BC=:P
                       else
                         x₀ = r₀*x[end]*rand()
                         y₀ = r₀*x[end]*rand()
-                        u01 .+= exp.(-α*((x .- ii .- x₀).^2 .+ (y' .- jj .- y₀).^2))
+                        val = sign(rand(Uniform(-c01*f, +c01*f)))
+                        u01 .+= f*c01*val*exp.(-α*((x .- ii .- x₀).^2 .+ (y' .- jj .- y₀).^2))
                       end
                     else
-                        u01 .+= exp.(-α*((x .- ii).^2 .+ (y' .- jj).^2))
+                        val = sign(rand(Uniform(-c01*f, +c01*f)))
+                        u01 .+= f*c01*val*exp.(-α*((x .- ii).^2 .+ (y' .- jj).^2))
                     end
                 end
                 for ic in 1:length(cell_vectors_raw2)
@@ -271,7 +277,8 @@ function init_cond(type, N; dx=1/143, M = 5, α=500.0, β=1000.0, c01 = 1, BC=:P
                     if (i, j, ic) ∈ zi
                         x₀ = r₀*x[end]*rand()
                         y₀ = r₀*x[end]*rand()
-                        u01 .+= exp.(-γ*((x .- ii .- x₀).^2 .+ (y' .- jj .- y₀).^2))
+                        val = sign(rand(Uniform(-c01*f, +c01*f)))
+                        u01 .+= f*c01*val*exp.(-γ*((x .- ii .- x₀).^2 .+ (y' .- jj .- y₀).^2))
                     end
                 end
             end
